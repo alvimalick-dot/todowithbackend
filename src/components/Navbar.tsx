@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 
@@ -24,7 +25,13 @@ export default function Navbar() {
               <Link href="/dashboard" style={styles.loginBtn}>Dashboard</Link>
               <Link href="/profile" style={styles.profileLink}>
                 {user.avatar ? (
-                  <img src={user.avatar} alt={user.name} style={styles.avatar} />
+                  <Image
+                    src={user.avatar}
+                    alt={user.name}
+                    width={28}
+                    height={28}
+                    style={styles.avatar}
+                  />
                 ) : (
                   <span style={styles.avatarFallback}>{user.name.charAt(0).toUpperCase()}</span>
                 )}

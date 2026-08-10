@@ -44,8 +44,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
-    refreshUser();
-  }, [refreshUser]);
+    const controller = new AbortController();
+
+    const loadUser = async () => {
+      try {
+        const res = await fetch('/api/auth/me', { cache: 'no-store', signal: controller.signal });
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        } else {
+          setUser(null);
+        }
+      } catch (err) {
+        if ((err as Error).name !== 'AbortError') {
+          setUser(null);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    };
+
+    loadUser();
+
+    return () => {
+      controller.abort();
+    };
+  }, []);
 
   return (
     <AuthContext.Provider value={{ user, loading, refreshUser, logout }}>

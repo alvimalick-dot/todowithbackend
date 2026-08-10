@@ -23,12 +23,14 @@ function getUserIdFromToken(req: NextRequest): string | null {
   }
 }
 
-// PUT /api/tasks/[id] -> Update a task
+// PUT /api/tasks/[id] -> Update a task status
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params; // <--- Await params here
+
     const userId = getUserIdFromToken(req);
     if (!userId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -46,9 +48,9 @@ export async function PUT(
 
     await connectDB();
     const updatedTask = await Task.findOneAndUpdate(
-      { _id: params.id, user: userId },
+      { _id: id, user: userId },
       validation.data,
-      { new: true }
+      { returnDocument: 'after' } // Updated to remove deprecation warning
     );
 
     if (!updatedTask) {
@@ -67,9 +69,11 @@ export async function PUT(
 // DELETE /api/tasks/[id] -> Delete a task
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params; // <--- Await params here
+
     const userId = getUserIdFromToken(req);
     if (!userId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
@@ -77,7 +81,7 @@ export async function DELETE(
 
     await connectDB();
     const deletedTask = await Task.findOneAndDelete({
-      _id: params.id,
+      _id: id,
       user: userId,
     });
 

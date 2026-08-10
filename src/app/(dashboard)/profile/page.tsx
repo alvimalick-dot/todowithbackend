@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
 export default function ProfilePage() {
@@ -9,13 +9,13 @@ export default function ProfilePage() {
   const [avatar, setAvatar] = useState('');
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState('');
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (user) {
-      setName(user.name);
-      setAvatar(user.avatar || '');
-    }
-  }, [user]);
+  if (user && user._id !== loadedUserId) {
+    setLoadedUserId(user._id);
+    setName(user.name);
+    setAvatar(user.avatar || '');
+  }
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
