@@ -27,10 +27,14 @@ export async function signToken(userId: string): Promise<string> {
 
 /**
  * Verifies and decodes a JWT token. Returns the payload or null if invalid/expired.
+ * NOTE: This file is shared with the Edge middleware, so it must stay
+ * edge-runtime-safe (no Node built-ins). OTP helpers live in ./otp.ts.
  */
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, secretKey);
+    // Pending OTP-login tokens are NOT sessions — never accept them here.
+    if (payload.purpose === 'otp-login') return null;
     return payload as JWTPayload;
   } catch {
     // Returns null if token signature is invalid or expired

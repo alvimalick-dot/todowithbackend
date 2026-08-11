@@ -3,7 +3,18 @@ import bcrypt from 'bcryptjs';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
 import { loginSchema } from '@/lib/validators/auth.schema';
-import { signToken } from '@/lib/auth';
+import { generateOtpCode, hashOtp, signOtpPendingToken } from '@/lib/otp';
+import { sendOtpEmail } from '@/lib/email';
+
+const OTP_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+/** Mask an email for display, e.g. j***@example.com */
+function maskEmail(email: string): string {
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  const visible = local.slice(0, Math.min(2, local.length));
+  return `${visible}***@${domain}`;
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -27,8 +38,10 @@ export async function POST(req: NextRequest) {
     // 3. Connect to DB
     await connectDB();
 
-    // 4. Find user by email (Explicitly select password since select: false in schema)
-    const user = await User.findOne({ email }).select('+password');
+    // 4. Find user by email (Explicitly select select:false fields we need)
+    const user = await User.findOne({ email }).select(
+      '+password +otpHash +otpExpiry +otpAttempts +otpSentAt +otpLockedUntil'
+    );
     if (!user || !user.password) {
       return NextResponse.json(
         { message: 'Invalid email or password' },
@@ -45,39 +58,61 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 6. Sign JWT with user ID
-    const token = await signToken(user._id.toString());
+    // 5a. Temporary lockout after too many wrong codes
+    if (user.otpLockedUntil && user.otpLockedUntil.getTime() > Date.now()) {
+      return NextResponse.json(
+        { message: 'Too many attempts. Please try again later.' },
+        { status: 429 }
+      );
+    }
 
-    // 7. Format sanitized user response (exclude password)
-    const userResponse = {
-      _id: user._id,
-      name: user.name,
-      email: user.email,
-      avatar: user.avatar,
-    };
+    // 5b. Rate-limit OTP emails: at most one per minute per account
+    if (user.otpSentAt && Date.now() - user.otpSentAt.getTime() < 60_000) {
+      const wait = Math.ceil(
+        (60_000 - (Date.now() - user.otpSentAt.getTime())) / 1000
+      );
+      return NextResponse.json(
+        { message: `A code was just sent. Please wait ${wait}s before trying again.` },
+        { status: 429 }
+      );
+    }
 
-    // 8. Create response and set httpOnly cookie
-    const response = NextResponse.json(
+    // 6. Generate a 6-digit OTP, store only its hash, and email it to the user
+    const otp = generateOtpCode();
+    await User.updateOne(
+      { _id: user._id },
       {
-        message: 'Login successful',
-        user: userResponse,
+        $set: {
+          otpHash: hashOtp(otp),
+          otpExpiry: new Date(Date.now() + OTP_TTL_MS),
+          otpAttempts: 0,
+          otpSentAt: new Date(),
+          otpLockedUntil: null,
+        },
+      }
+    );
+
+    try {
+      await sendOtpEmail(user.email, otp);
+    } catch {
+      return NextResponse.json(
+        { message: 'Could not send the verification code. Please try again.' },
+        { status: 500 }
+      );
+    }
+
+    // 7. Short-lived token proving the password step only — NOT a session.
+    //    It can only be exchanged for a real session by presenting the OTP.
+    const pendingToken = await signOtpPendingToken(user._id.toString());
+
+    return NextResponse.json(
+      {
+        message: 'Verification code sent',
+        pendingToken,
+        email: maskEmail(user.email),
       },
       { status: 200 }
     );
-
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    response.cookies.set({
-      name: 'token',
-      value: token,
-      httpOnly: true, // Prevents JavaScript client-side access
-      secure: isProduction, // HTTPS only in production
-      sameSite: 'lax', // CSRF protection
-      path: '/', // Cookie accessible across the entire app
-      maxAge: 7 * 24 * 60 * 60, // 7 days in seconds
-    });
-
-    return response;
   } catch (error) {
     return NextResponse.json(
       { message: 'Internal Server Error', error: (error as Error).message },

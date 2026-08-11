@@ -34,3 +34,18 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Email OTP login
+
+Logging in is a two-step flow: **email + password**, then a **6-digit code** emailed to the account address via [Resend](https://resend.com). The code is bound to the account that passed the password step, stored only as a hash, expires after 10 minutes, is single-use, and is rate-limited (5 attempts, 1 resend per minute).
+
+Set these variables in `.env.local`:
+
+```
+RESEND_API_KEY=re_xxx
+EMAIL_FROM=Productivity Hub <onboarding@resend.dev>   # must be a verified sender in Resend
+```
+
+If `RESEND_API_KEY` is not set (local development), the OTP is printed to the server terminal instead of emailed, so the flow stays testable.
+
+Create an API key at https://resend.com/api-keys.

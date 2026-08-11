@@ -4,6 +4,9 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 
+const inputCls =
+  'w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/30';
+
 export default function RegisterPage() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -47,127 +50,79 @@ export default function RegisterPage() {
 
   return (
     <div>
-      <h1 style={styles.title}>Create an Account</h1>
+      <div className="mb-6 text-center">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-2xl shadow-lg shadow-indigo-500/30">
+          ⚡
+        </span>
+        <h1 className="mt-4 text-2xl font-bold">Create an Account</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Start organizing your work today.</p>
+      </div>
 
-      {generalError && <p style={styles.errorText}>{generalError}</p>}
+      {generalError && (
+        <p className="mb-4 rounded-lg bg-danger-bg/40 px-3 py-2.5 text-sm text-danger">{generalError}</p>
+      )}
 
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <div style={styles.field}>
-          <label style={styles.label}>Name</label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold">Name</label>
           <input
             type="text"
             value={name}
             onChange={(e) => setName(e.target.value)}
             placeholder="John Doe"
             required
-            style={styles.input}
+            className={inputCls}
           />
-          {errors.name && <p style={styles.fieldError}>{errors.name[0]}</p>}
+          {errors.name && <p className="mt-1 text-xs text-danger">{errors.name[0]}</p>}
         </div>
 
-        <div style={styles.field}>
-          <label style={styles.label}>Email</label>
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold">Email</label>
           <input
             type="email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="john@example.com"
             required
-            style={styles.input}
+            className={inputCls}
           />
-          {errors.email && <p style={styles.fieldError}>{errors.email[0]}</p>}
+          {errors.email && <p className="mt-1 text-xs text-danger">{errors.email[0]}</p>}
         </div>
 
-        <div style={styles.field}>
-          <label style={styles.label}>Password</label>
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold">Password</label>
           <input
             type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             placeholder="••••••••"
             required
-            style={styles.input}
+            className={inputCls}
           />
-          {errors.password && <p style={styles.fieldError}>{errors.password[0]}</p>}
+          {errors.password ? (
+            <p className="mt-1 text-xs text-danger">{errors.password[0]}</p>
+          ) : (
+            <p className="mt-1 text-xs text-muted-foreground">
+              8+ characters with uppercase, lowercase & a number.
+            </p>
+          )}
         </div>
 
-        <button type="submit" disabled={loading} style={styles.button}>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50"
+        >
           {loading ? 'Creating Account...' : 'Register'}
         </button>
       </form>
 
-      <p style={styles.footerText}>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Already have an account?{' '}
-        <Link href="/login" style={styles.link}>
+        <Link href="/login" className="font-semibold text-primary hover:text-primary-hover">
           Log In
         </Link>
       </p>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  title: {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    marginBottom: '20px',
-    textAlign: 'center',
-     color : "#000"
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-  },
-  label: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#374151',
-  },
-  input: {
-    padding: '10px 12px',
-    borderRadius: '6px',
-    border: '1px solid #000',
-    fontSize: '14px',
-    outline: 'none',
-     color : "#000"
-  },
-  button: {
-    padding: '12px',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: '#2563eb',
-    color: '#000',
-    fontWeight: '600',
-    cursor: 'pointer',
-    marginTop: '10px',
-  },
-  errorText: {
-    color: '#dc2626',
-    backgroundColor: '#000',
-    padding: '10px',
-    borderRadius: '6px',
-    fontSize: '14px',
-    marginBottom: '16px',
-  },
-  fieldError: {
-    color: '#dc2626',
-    fontSize: '12px',
-  },
-  footerText: {
-    marginTop: '20px',
-    textAlign: 'center',
-    fontSize: '14px',
-    color: '#6b7280',
-  },
-  link: {
-    color: '#2563eb',
-    textDecoration: 'none',
-    fontWeight: '600',
-  },
-};

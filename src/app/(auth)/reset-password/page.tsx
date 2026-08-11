@@ -4,6 +4,9 @@ import { useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
+const inputCls =
+  'w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/30';
+
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get('token') || '';
@@ -58,15 +61,25 @@ function ResetPasswordForm() {
   };
 
   return (
-    <div style={styles.container}>
-      <h1 style={styles.title}>Set New Password</h1>
+    <div>
+      <div className="mb-6 text-center">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-2xl shadow-lg shadow-indigo-500/30">
+          🔐
+        </span>
+        <h1 className="mt-4 text-2xl font-bold">Set New Password</h1>
+        <p className="mt-1 text-sm text-muted-foreground">Choose a new password for your account.</p>
+      </div>
 
-      {message && <p style={styles.successText}>{message}</p>}
-      {error && <p style={styles.errorText}>{error}</p>}
+      {message && (
+        <p className="mb-4 rounded-lg bg-success-bg/50 px-3 py-2.5 text-sm text-success">{message}</p>
+      )}
+      {error && (
+        <p className="mb-4 rounded-lg bg-danger-bg/40 px-3 py-2.5 text-sm text-danger">{error}</p>
+      )}
 
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <div style={styles.field}>
-          <label style={styles.label}>New Password</label>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold">New Password</label>
           <input
             type="password"
             value={password}
@@ -74,12 +87,12 @@ function ResetPasswordForm() {
             placeholder="••••••••"
             required
             minLength={6}
-            style={styles.input}
+            className={inputCls}
           />
         </div>
 
-        <div style={styles.field}>
-          <label style={styles.label}>Confirm New Password</label>
+        <div>
+          <label className="mb-1.5 block text-sm font-semibold">Confirm New Password</label>
           <input
             type="password"
             value={confirmPassword}
@@ -87,18 +100,22 @@ function ResetPasswordForm() {
             placeholder="••••••••"
             required
             minLength={6}
-            style={styles.input}
+            className={inputCls}
           />
         </div>
 
-        <button type="submit" disabled={loading} style={styles.button}>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50"
+        >
           {loading ? 'Resetting...' : 'Reset Password'}
         </button>
       </form>
 
-      <p style={styles.footerText}>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
         Back to{' '}
-        <Link href="/login" style={styles.link}>
+        <Link href="/login" className="font-semibold text-primary hover:text-primary-hover">
           Log In
         </Link>
       </p>
@@ -108,87 +125,12 @@ function ResetPasswordForm() {
 
 export default function ResetPasswordPage() {
   return (
-    <Suspense fallback={<div style={{ textAlign: 'center', marginTop: '40px' }}>Loading...</div>}>
+    <Suspense
+      fallback={
+        <div className="py-10 text-center text-sm text-muted-foreground">Loading...</div>
+      }
+    >
       <ResetPasswordForm />
     </Suspense>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  container: {
-    width: '100%',
-    maxWidth: '400px',
-    margin: '40px auto',
-    padding: '24px',
-    backgroundColor: '#ffffff',
-    borderRadius: '12px',
-    boxShadow: '0 4px 12px rgba(0, 0, 0, 0.05)',
-  },
-  title: {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    marginBottom: '20px',
-    textAlign: 'center',
-    color: '#111827',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-  },
-  label: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#374151',
-  },
-  input: {
-    padding: '10px 12px',
-    borderRadius: '6px',
-    border: '1px solid #d1d5db',
-    fontSize: '14px',
-    outline: 'none',
-    color: '#000000',
-  },
-  button: {
-    padding: '12px',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    fontWeight: '600',
-    cursor: 'pointer',
-    marginTop: '8px',
-  },
-  successText: {
-    color: '#166534',
-    backgroundColor: '#f0fdf4',
-    padding: '10px',
-    borderRadius: '6px',
-    fontSize: '14px',
-    marginBottom: '16px',
-  },
-  errorText: {
-    color: '#dc2626',
-    backgroundColor: '#fef2f2',
-    padding: '10px',
-    borderRadius: '6px',
-    fontSize: '14px',
-    marginBottom: '16px',
-  },
-  footerText: {
-    marginTop: '20px',
-    textAlign: 'center',
-    fontSize: '14px',
-    color: '#6b7280',
-  },
-  link: {
-    color: '#2563eb',
-    textDecoration: 'none',
-    fontWeight: '600',
-  },
-};

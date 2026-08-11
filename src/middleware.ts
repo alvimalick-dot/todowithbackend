@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { verifyToken } from '@/lib/auth';
 
 // Define paths that require authentication
-const protectedPaths = ['/dashboard', '/profile', '/settings'];
+const protectedPaths = ['/dashboard', '/tasks', '/profile', '/settings', '/notes', '/calendar'];
 
 // Define paths accessible only to guest users (e.g. redirect to dashboard if logged in)
 const authPaths = ['/login', '/register'];

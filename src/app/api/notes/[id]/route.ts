@@ -1,24 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import Task from '@/models/Task';
-import { updateTaskSchema } from '@/lib/validators/task.schema';
+import Note from '@/models/Note';
+import { updateNoteSchema } from '@/lib/validators/note.schema';
 import { verifyToken } from '@/lib/auth';
 
 async function getUserIdFromToken(req: NextRequest): Promise<string | null> {
   const token = req.cookies.get('token')?.value;
   if (!token) return null;
-
   const decoded = await verifyToken(token);
   return decoded?.userId ?? null;
 }
 
-// PUT /api/tasks/[id] -> Update a task status
+// PUT /api/notes/[id] -> Update a note
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // <--- Await params here
+    const { id } = await params;
 
     const userId = await getUserIdFromToken(req);
     if (!userId) {
@@ -26,7 +25,7 @@ export async function PUT(
     }
 
     const body = await req.json();
-    const validation = updateTaskSchema.safeParse(body);
+    const validation = updateNoteSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json(
@@ -36,32 +35,34 @@ export async function PUT(
     }
 
     await connectDB();
-    const updatedTask = await Task.findOneAndUpdate(
+
+    // Secure query matching BOTH note _id and user ID
+    const updatedNote = await Note.findOneAndUpdate(
       { _id: id, user: userId },
       validation.data,
-      { returnDocument: 'after' } // Updated to remove deprecation warning
+      { returnDocument: 'after' }
     );
 
-    if (!updatedTask) {
-      return NextResponse.json({ message: 'Task not found' }, { status: 404 });
+    if (!updatedNote) {
+      return NextResponse.json({ message: 'Note not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ task: updatedTask }, { status: 200 });
+    return NextResponse.json({ note: updatedNote }, { status: 200 });
   } catch (error) {
     return NextResponse.json(
-      { message: 'Failed to update task', error: (error as Error).message },
+      { message: 'Failed to update note', error: (error as Error).message },
       { status: 500 }
     );
   }
 }
 
-// DELETE /api/tasks/[id] -> Delete a task
+// DELETE /api/notes/[id] -> Delete a note
 export async function DELETE(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = await params; // <--- Await params here
+    const { id } = await params;
 
     const userId = await getUserIdFromToken(req);
     if (!userId) {
@@ -69,19 +70,24 @@ export async function DELETE(
     }
 
     await connectDB();
-    const deletedTask = await Task.findOneAndDelete({
+
+    // Secure query matching BOTH note _id and user ID
+    const deletedNote = await Note.findOneAndDelete({
       _id: id,
       user: userId,
     });
 
-    if (!deletedTask) {
-      return NextResponse.json({ message: 'Task not found' }, { status: 404 });
+    if (!deletedNote) {
+      return NextResponse.json({ message: 'Note not found' }, { status: 404 });
     }
 
-    return NextResponse.json({ message: 'Task deleted successfully' }, { status: 200 });
+    return NextResponse.json(
+      { message: 'Note deleted successfully' },
+      { status: 200 }
+    );
   } catch (error) {
     return NextResponse.json(
-      { message: 'Failed to delete task', error: (error as Error).message },
+      { message: 'Failed to delete note', error: (error as Error).message },
       { status: 500 }
     );
   }

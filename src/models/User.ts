@@ -7,6 +7,11 @@ export interface IUser extends Document {
   avatar?: string;
   resetPasswordToken?: string;
   resetPasswordExpiry?: Date;
+  otpHash?: string;
+  otpExpiry?: Date;
+  otpAttempts?: number;
+  otpSentAt?: Date;
+  otpLockedUntil?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +50,27 @@ const UserSchema = new Schema<IUser>(
       select: false,
     },
     resetPasswordExpiry: {
+      type: Date,
+      select: false,
+    },
+    otpHash: {
+      type: String,
+      select: false,
+    },
+    otpExpiry: {
+      type: Date,
+      select: false,
+    },
+    otpAttempts: {
+      type: Number,
+      default: 0,
+      select: false,
+    },
+    otpSentAt: {
+      type: Date,
+      select: false,
+    },
+    otpLockedUntil: {
       type: Date,
       select: false,
     },

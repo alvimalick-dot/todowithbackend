@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
-import Task from '@/models/Task';
-import { createTaskSchema } from '@/lib/validators/task.schema';
+import Event from '@/models/Event';
+import { createEventSchema } from '@/lib/validators/event.schema';
 import { verifyToken } from '@/lib/auth';
 
 async function getUserIdFromToken(req: NextRequest): Promise<string | null> {
@@ -12,7 +12,7 @@ async function getUserIdFromToken(req: NextRequest): Promise<string | null> {
   return decoded?.userId ?? null;
 }
 
-// GET /api/tasks -> Fetch tasks for logged-in user with dynamic filters
+// GET /api/events -> Query events scoped to user & date range
 export async function GET(req: NextRequest) {
   try {
     const userId = await getUserIdFromToken(req);
@@ -23,34 +23,27 @@ export async function GET(req: NextRequest) {
     await connectDB();
 
     const { searchParams } = req.nextUrl;
-    const status = searchParams.get('status');
-    const priority = searchParams.get('priority');
-    const category = searchParams.get('category');
-    const search = searchParams.get('search');
-    const sort = searchParams.get('sort') || '-createdAt';
+    const start = searchParams.get('start');
+    const end = searchParams.get('end');
 
-    // Base filter scoped strictly to current user
     const filter: Record<string, unknown> = { user: userId };
 
-    if (status) filter.status = status;
-    if (priority) filter.priority = priority;
-    if (category) filter.category = category;
-    if (search) {
-      filter.title = { $regex: search, $options: 'i' };
+    if (start && end) {
+      filter.date = { $gte: new Date(start), $lte: new Date(end) };
     }
 
-    const tasks = await Task.find(filter).sort(sort);
+    const events = await Event.find(filter).sort({ date: 1 });
 
-    return NextResponse.json({ tasks }, { status: 200 });
+    return NextResponse.json({ events }, { status: 200 });
   } catch (error) {
     return NextResponse.json(
-      { message: 'Failed to fetch tasks', error: (error as Error).message },
+      { message: 'Failed to fetch events', error: (error as Error).message },
       { status: 500 }
     );
   }
 }
 
-// POST /api/tasks -> Create new task
+// POST /api/events -> Create new event
 export async function POST(req: NextRequest) {
   try {
     const userId = await getUserIdFromToken(req);
@@ -59,7 +52,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const validation = createTaskSchema.safeParse(body);
+    const validation = createEventSchema.safeParse(body);
 
     if (!validation.success) {
       return NextResponse.json(
@@ -69,15 +62,15 @@ export async function POST(req: NextRequest) {
     }
 
     await connectDB();
-    const newTask = await Task.create({
+    const newEvent = await Event.create({
       ...validation.data,
       user: userId,
     });
 
-    return NextResponse.json({ task: newTask }, { status: 201 });
+    return NextResponse.json({ event: newEvent }, { status: 201 });
   } catch (error) {
     return NextResponse.json(
-      { message: 'Failed to create task', error: (error as Error).message },
+      { message: 'Failed to create event', error: (error as Error).message },
       { status: 500 }
     );
   }

@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import User from '@/models/User';
+import Task from '@/models/Task';
+import Event from '@/models/Event';
+import Note from '@/models/Note';
 import { verifyToken } from '@/lib/auth';
 import { z } from 'zod';
 
@@ -41,4 +44,40 @@ export async function PUT(req: NextRequest) {
   const updatedUser = await User.findByIdAndUpdate(userId, validation.data, { new: true }).select('-password');
 
   return NextResponse.json({ user: updatedUser }, { status: 200 });
+}
+
+// DELETE /api/user/profile -> Permanently delete account and all related data
+export async function DELETE(req: NextRequest) {
+  const userId = await getUserId(req);
+  if (!userId) return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
+
+  await connectDB();
+
+  const deletedUser = await User.findByIdAndDelete(userId);
+  if (!deletedUser) {
+    return NextResponse.json({ message: 'User not found' }, { status: 404 });
+  }
+
+  // Cascade delete all user data
+  await Promise.all([
+    Task.deleteMany({ user: userId }),
+    Event.deleteMany({ user: userId }),
+    Note.deleteMany({ user: userId }),
+  ]);
+
+  const response = NextResponse.json(
+    { message: 'Account deleted successfully' },
+    { status: 200 }
+  );
+
+  // Clear the auth cookie
+  response.cookies.set({
+    name: 'token',
+    value: '',
+    httpOnly: true,
+    expires: new Date(0),
+    path: '/',
+  });
+
+  return response;
 }

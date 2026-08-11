@@ -1,30 +1,52 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
+
+const inputCls =
+  'w-full rounded-lg border border-input bg-background px-3 py-2.5 text-sm outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/30';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  // OTP step state
+  const [step, setStep] = useState<'credentials' | 'otp'>('credentials');
+  const [pendingToken, setPendingToken] = useState('');
+  const [maskedEmail, setMaskedEmail] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [verifying, setVerifying] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
   const router = useRouter();
   const { refreshUser } = useAuth();
+
+  // 60s resend countdown
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const id = window.setInterval(
+      () => setCooldown((c) => Math.max(0, c - 1)),
+      1000
+    );
+    return () => window.clearInterval(id);
+  }, [cooldown]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
-
       const data = await res.json();
 
       if (!res.ok) {
@@ -32,8 +54,12 @@ export default function LoginPage() {
         return;
       }
 
-      await refreshUser();
-      router.push('/dashboard');
+      setPendingToken(data.pendingToken);
+      setMaskedEmail(data.email || 'your email');
+      setOtp('');
+      setOtpError('');
+      setCooldown(60);
+      setStep('otp');
     } catch {
       setError('An unexpected error occurred. Please try again.');
     } finally {
@@ -41,120 +67,215 @@ export default function LoginPage() {
     }
   };
 
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (otp.length !== 6) {
+      setOtpError('Enter the 6-digit code from your email.');
+      return;
+    }
+    setVerifying(true);
+    setOtpError('');
+    try {
+      const res = await fetch('/api/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pendingToken, otp }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (res.status === 401) {
+          // Pending token expired — restart the flow
+          setStep('credentials');
+          setError(data.message || 'Session expired. Please log in again.');
+        } else {
+          setOtpError(data.message || 'Incorrect code. Please try again.');
+        }
+        return;
+      }
+
+      await refreshUser();
+      router.push('/dashboard');
+    } catch {
+      setOtpError('An unexpected error occurred.');
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleResend = async () => {
+    if (cooldown > 0 || resending) return;
+    setResending(true);
+    setOtpError('');
+    try {
+      const res = await fetch('/api/auth/resend-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pendingToken }),
+      });
+      const data = await res.json();
+      if (res.status === 429) {
+        setOtpError(data.message || 'Please wait before requesting a new code.');
+        const match = data.message?.match(/(\d+)s/);
+        if (match) setCooldown(Number(match[1]));
+      } else if (!res.ok) {
+        setOtpError(data.message || 'Could not resend the code.');
+      } else {
+        setCooldown(60);
+        setOtp('');
+        setOtpError('');
+      }
+    } catch {
+      setOtpError('An unexpected error occurred.');
+    } finally {
+      setResending(false);
+    }
+  };
+
+  const handleBack = () => {
+    setStep('credentials');
+    setPendingToken('');
+    setOtp('');
+    setOtpError('');
+  };
+
   return (
     <div>
-      <h1 style={styles.title}>Welcome Back</h1>
+      <div className="mb-6 text-center">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-2xl shadow-lg shadow-indigo-500/30">
+          ⚡
+        </span>
+        <h1 className="mt-4 text-2xl font-bold">
+          {step === 'credentials' ? 'Welcome Back' : 'Verify Your Login'}
+        </h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {step === 'credentials'
+            ? 'Sign in to continue to your dashboard.'
+            : `We sent a 6-digit code to ${maskedEmail}.`}
+        </p>
+      </div>
 
-      {error && <p style={styles.errorText}>{error}</p>}
+      {step === 'credentials' ? (
+        <>
+          {error && (
+            <p className="mb-4 rounded-lg bg-danger-bg/40 px-3 py-2.5 text-sm text-danger">
+              {error}
+            </p>
+          )}
 
-      <form onSubmit={handleSubmit} style={styles.form}>
-        <div style={styles.field}>
-          <label style={styles.label}>Email</label>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="john@example.com"
-            required
-            style={styles.input}
-          />
-        </div>
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold">Email</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="john@example.com"
+                required
+                autoComplete="email"
+                className={inputCls}
+              />
+            </div>
 
-        <div style={styles.field}>
-          <label style={styles.label}>Password</label>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="••••••••"
-            required
-            style={styles.input}
-          />
-          <div style={styles.forgotPasswordWrapper}>
-            <Link href="/forgot-password" style={styles.link}>
-              Forgot password?
-            </Link>
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label className="text-sm font-semibold">Password</label>
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-semibold text-primary hover:text-primary-hover"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <input
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="••••••••"
+                required
+                autoComplete="current-password"
+                className={inputCls}
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50"
+            >
+              {loading ? 'Sending code...' : 'Log In'}
+            </button>
+            <p className="text-center text-xs text-muted-foreground">
+              For your security, we&apos;ll email you a one-time code to verify
+              this login.
+            </p>
+          </form>
+        </>
+      ) : (
+        <>
+          {otpError && (
+            <p className="mb-4 rounded-lg bg-danger-bg/40 px-3 py-2.5 text-sm text-danger">
+              {otpError}
+            </p>
+          )}
+
+          <form onSubmit={handleVerify} className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-semibold">
+                One-time code
+              </label>
+              <input
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                value={otp}
+                onChange={(e) =>
+                  setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))
+                }
+                placeholder="······"
+                autoFocus
+                className="w-full rounded-lg border border-input bg-background px-3 py-3 text-center text-2xl font-bold tracking-[0.5em] outline-none transition-colors focus:border-ring focus:ring-2 focus:ring-ring/30"
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={verifying}
+              className="w-full rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/25 transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50"
+            >
+              {verifying ? 'Verifying...' : 'Verify & Log In'}
+            </button>
+          </form>
+
+          <div className="mt-5 flex items-center justify-between text-sm">
+            <button
+              onClick={handleBack}
+              className="font-semibold text-muted-foreground transition-colors hover:text-foreground"
+            >
+              ← Use a different account
+            </button>
+            <button
+              onClick={handleResend}
+              disabled={cooldown > 0 || resending}
+              className="font-semibold text-primary transition-colors hover:text-primary-hover disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {resending
+                ? 'Sending...'
+                : cooldown > 0
+                ? `Resend in 0:${String(cooldown).padStart(2, '0')}`
+                : 'Resend code'}
+            </button>
           </div>
-        </div>
+        </>
+      )}
 
-        <button type="submit" disabled={loading} style={styles.button}>
-          {loading ? 'Logging in...' : 'Log In'}
-        </button>
-      </form>
-
-      <p style={styles.footerText}>
-        {"Don't have an account? "}
-        <Link href="/register" style={styles.link}>
+      <p className="mt-6 text-center text-sm text-muted-foreground">
+        Don&apos;t have an account?{' '}
+        <Link href="/register" className="font-semibold text-primary hover:text-primary-hover">
           Register
         </Link>
       </p>
     </div>
   );
 }
-
-const styles: Record<string, React.CSSProperties> = {
-  title: {
-    fontSize: '24px',
-    fontWeight: 'bold',
-    marginBottom: '20px',
-    textAlign: 'center',
-    color: '#000',
-  },
-  form: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '16px',
-  },
-  field: {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: '6px',
-  },
-  label: {
-    fontSize: '14px',
-    fontWeight: '600',
-    color: '#000',
-  },
-  input: {
-    padding: '10px 12px',
-    borderRadius: '6px',
-    border: '1px solid #000',
-    fontSize: '14px',
-    outline: 'none',
-    color: '#000',
-  },
-  forgotPasswordWrapper: {
-    textAlign: 'right',
-    marginTop: '2px',
-  },
-  button: {
-    padding: '12px',
-    borderRadius: '6px',
-    border: 'none',
-    backgroundColor: '#2563eb',
-    color: '#ffffff',
-    fontWeight: '600',
-    cursor: 'pointer',
-    marginTop: '10px',
-  },
-  errorText: {
-    color: '#dc2626',
-    backgroundColor: '#fef2f2',
-    padding: '10px',
-    borderRadius: '6px',
-    fontSize: '14px',
-    marginBottom: '16px',
-  },
-  footerText: {
-    marginTop: '20px',
-    textAlign: 'center',
-    fontSize: '14px',
-    color: '#000',
-  },
-  link: {
-    color: '#2563eb',
-    textDecoration: 'none',
-    fontWeight: '600',
-    fontSize: '13px',
-  },
-};

@@ -5,6 +5,10 @@ export interface ITask extends Document {
   title: string;
   description?: string;
   status: 'pending' | 'in-progress' | 'completed';
+  priority: 'low' | 'medium' | 'high';
+  category?: string;
+  dueDate?: Date;
+  remind: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -31,6 +35,23 @@ const TaskSchema: Schema<ITask> = new Schema(
       type: String,
       enum: ['pending', 'in-progress', 'completed'],
       default: 'pending',
+    },
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high'],
+      default: 'medium',
+    },
+    category: {
+      type: String,
+      trim: true,
+      default: 'general',
+    },
+    dueDate: {
+      type: Date,
+    },
+    remind: {
+      type: Boolean,
+      default: false,
     },
   },
   {
