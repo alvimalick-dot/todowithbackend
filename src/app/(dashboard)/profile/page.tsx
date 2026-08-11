@@ -194,10 +194,10 @@ export default function ProfilePage() {
                 alt="Avatar"
                 width={72}
                 height={72}
-                className="h-[72px] w-[72px] rounded-full border-2 border-border object-cover"
+                className="h-18 w-18 rounded-full border-2 border-border object-cover"
               />
             ) : (
-              <span className="flex h-[72px] w-[72px] items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-2xl font-bold text-white">
+              <span className="flex h-18 w-18 items-center justify-center rounded-full bg-linear-to-br from-indigo-500 to-violet-600 text-2xl font-bold text-white">
                 {user.name.charAt(0).toUpperCase()}
               </span>
             )}

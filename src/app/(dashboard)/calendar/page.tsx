@@ -256,7 +256,7 @@ export default function CalendarPage() {
         {/* Calendar */}
         <div className="rounded-xl border border-border bg-card p-4">
           {loading ? (
-            <div className="flex h-[600px] items-center justify-center text-sm text-muted-foreground">
+            <div className="flex h-150 items-center justify-center text-sm text-muted-foreground">
               Loading calendar...
             </div>
           ) : (
@@ -271,7 +271,7 @@ export default function CalendarPage() {
               onNavigate={(newDate: Date) => setCurrentDate(newDate)}
               onSelectEvent={handleSelectItem}
               eventPropGetter={eventStyleGetter}
-              className="h-[600px]"
+              className="h-150"
             />
           )}
         </div>

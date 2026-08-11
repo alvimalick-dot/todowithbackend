@@ -2,7 +2,9 @@ import { Resend } from 'resend';
 
 const apiKey = process.env.RESEND_API_KEY;
 const from =
-  process.env.EMAIL_FROM || 'Productivity Hub <onboarding@resend.dev>';
+  process.env.RESEND_FROM_EMAIL ||
+  process.env.EMAIL_FROM ||
+  'Productivity Hub <onboarding@resend.dev>';
 
 let client: Resend | null = null;
 if (apiKey) {

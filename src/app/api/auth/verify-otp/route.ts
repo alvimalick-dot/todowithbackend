@@ -112,10 +112,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Single-use: wipe the OTP before issuing the session
+    // Single-use: wipe the OTP, mark the email verified, then issue the session
     await User.updateOne(
       { _id: user._id },
-      { $unset: { otpHash: '', otpExpiry: '', otpAttempts: '', otpSentAt: '' } }
+      {
+        $set: { emailVerified: true },
+        $unset: { otpHash: '', otpExpiry: '', otpAttempts: '', otpSentAt: '' },
+      }
     );
 
     const token = await signToken(user._id.toString());

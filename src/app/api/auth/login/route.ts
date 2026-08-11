@@ -103,7 +103,10 @@ export async function POST(req: NextRequest) {
 
     // 7. Short-lived token proving the password step only — NOT a session.
     //    It can only be exchanged for a real session by presenting the OTP.
-    const pendingToken = await signOtpPendingToken(user._id.toString());
+    const pendingToken = await signOtpPendingToken(
+      user._id.toString(),
+      'otp-login'
+    );
 
     return NextResponse.json(
       {

@@ -33,8 +33,9 @@ export async function signToken(userId: string): Promise<string> {
 export async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, secretKey);
-    // Pending OTP-login tokens are NOT sessions — never accept them here.
-    if (payload.purpose === 'otp-login') return null;
+    // Any token carrying a purpose claim (OTP login/register) is NOT a
+    // session — never accept it as an auth cookie.
+    if (typeof payload.purpose === 'string') return null;
     return payload as JWTPayload;
   } catch {
     // Returns null if token signature is invalid or expired

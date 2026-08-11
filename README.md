@@ -35,15 +35,20 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
-## Email OTP login
+## Email OTP verification
 
-Logging in is a two-step flow: **email + password**, then a **6-digit code** emailed to the account address via [Resend](https://resend.com). The code is bound to the account that passed the password step, stored only as a hash, expires after 10 minutes, is single-use, and is rate-limited (5 attempts, 1 resend per minute).
+Both **registration** and **login** use a two-step, email-verified flow: enter credentials, then enter the 6-digit code emailed to the account address via [Resend](https://resend.com).
+
+- New accounts are created unverified and are only activated once the emailed code is confirmed.
+- The code is bound to the account that passed the credential step, stored only as a hash, expires after 10 minutes, is single-use, and is rate-limited (5 attempts → 10-minute lockout, 1 resend per minute).
+- Pending tokens from the code step can never be used as session cookies.
 
 Set these variables in `.env.local`:
 
 ```
 RESEND_API_KEY=re_xxx
-EMAIL_FROM=Productivity Hub <onboarding@resend.dev>   # must be a verified sender in Resend
+RESEND_FROM_EMAIL=You <you@yourdomain.com>   # must be a verified sender in Resend
+# EMAIL_FROM=...  # optional alias for RESEND_FROM_EMAIL
 ```
 
 If `RESEND_API_KEY` is not set (local development), the OTP is printed to the server terminal instead of emailed, so the flow stays testable.

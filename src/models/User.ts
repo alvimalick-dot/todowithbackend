@@ -4,6 +4,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password?: string; // Optional if you add OAuth (Google/GitHub) later
+  emailVerified: boolean;
   avatar?: string;
   resetPasswordToken?: string;
   resetPasswordExpiry?: Date;
@@ -44,6 +45,10 @@ const UserSchema = new Schema<IUser>(
     avatar: {
       type: String,
       default: '',
+    },
+    emailVerified: {
+      type: Boolean,
+      default: false,
     },
     resetPasswordToken: {
       type: String,

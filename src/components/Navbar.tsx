@@ -36,7 +36,7 @@ export default function Navbar() {
       <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-4 sm:px-6">
         {/* Brand */}
         <Link href="/" className="group flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 text-lg shadow-lg shadow-indigo-500/25 transition-transform group-hover:scale-105">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-lg shadow-lg shadow-indigo-500/25 transition-transform group-hover:scale-105">
             ⚡
           </span>
           <span className="hidden text-lg font-bold tracking-tight sm:block">
@@ -81,7 +81,7 @@ export default function Navbar() {
                       className="h-7 w-7 rounded-full object-cover"
                     />
                   ) : (
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-xs font-bold text-white">
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-linear-to-br from-indigo-500 to-violet-600 text-xs font-bold text-white">
                       {user.name.charAt(0).toUpperCase()}
                     </span>
                   )}

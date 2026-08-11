@@ -142,7 +142,7 @@ export default function LoginPage() {
   return (
     <div>
       <div className="mb-6 text-center">
-        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-2xl shadow-lg shadow-indigo-500/30">
+        <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-linear-to-br from-indigo-500 to-violet-600 text-2xl shadow-lg shadow-indigo-500/30">
           ⚡
         </span>
         <h1 className="mt-4 text-2xl font-bold">
