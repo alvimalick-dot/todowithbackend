@@ -33,7 +33,7 @@ export default function Navbar() {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-card/80 backdrop-blur-md">
-      <div className="mx-auto flex h-16 max-w-[1400px] items-center justify-between gap-4 px-4 sm:px-6">
+      <div className="mx-auto flex h-16 max-w-350 items-center justify-between gap-4 px-4 sm:px-6">
         {/* Brand */}
         <Link href="/" className="group flex items-center gap-2.5">
           <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-linear-to-br from-indigo-500 to-violet-600 text-lg shadow-lg shadow-indigo-500/25 transition-transform group-hover:scale-105">
@@ -85,7 +85,7 @@ export default function Navbar() {
                       {user.name.charAt(0).toUpperCase()}
                     </span>
                   )}
-                  <span className="hidden max-w-[120px] truncate text-sm font-semibold sm:block">
+                  <span className="hidden max-w-30 truncate text-sm font-semibold sm:block">
                     {user.name}
                   </span>
                   <span className={`text-xs text-muted-foreground transition-transform ${menuOpen ? 'rotate-180' : ''}`}>
